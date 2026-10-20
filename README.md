@@ -46,6 +46,37 @@ uv run build.py --full   # 強制全部重建
 }
 ```
 
+想連進行中的 session 也一起更新，可以再加一個 launchd 排程，每 5 分鐘跑一次。兩邊同時觸發也沒關係，後到的那次會直接跳過。
+
+存成 `~/Library/LaunchAgents/com.example.cc-archive.plist`，把路徑換成你自己的：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.example.cc-archive</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/you/.local/bin/uv</string><string>run</string><string>build.py</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/you/path/to/cc-archive</string>
+  <key>StartInterval</key><integer>300</integer>
+  <key>RunAtLoad</key><true/>
+  <key>Nice</key><integer>10</integer>
+  <key>StandardOutPath</key><string>/Users/you/Library/Logs/cc-archive.log</string>
+  <key>StandardErrorPath</key><string>/Users/you/Library/Logs/cc-archive.log</string>
+</dict>
+</plist>
+```
+
+```bash
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.example.cc-archive.plist   # 啟用
+launchctl bootout gui/$(id -u)/com.example.cc-archive                                   # 停用
+```
+
+注意：log 不要寫到 `~/Documents`、`~/Desktop` 這類受 macOS 隱私保護的資料夾，否則 launchd 會直接失敗（exit code 78）。如果 cc-archive 本身放在這些資料夾裡，第一次執行時 macOS 可能會跳出視窗詢問存取權限，按允許就好。
+
 ## 隱私
 
 - 純靜態檔案：沒有 server、不連網、沒有追蹤。
