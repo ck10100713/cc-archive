@@ -14,8 +14,10 @@ the dashboard (index.html) on top. Everything stays on disk, no server.
 
 import argparse
 import contextlib
+import fcntl
 import io
 import json
+import os
 import re
 import sys
 import webbrowser
@@ -172,6 +174,13 @@ def build_transcript(jsonl, out_dir, sid):
         page.write_text(re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + bar, html, count=1), encoding="utf-8")
 
 
+def write_atomic(path, text):
+    # the dashboard may be open while a hook rebuilds; never expose a half-written file
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=Path, default=HERE / "site")
@@ -183,8 +192,16 @@ def main():
     out = args.out
     out.mkdir(parents=True, exist_ok=True)
     out.chmod(0o700)  # transcripts may hold secrets; keep them private to this user
+    # ponytail: a second build that finds the lock just skips; the next SessionEnd catches up
+    lock = (out / ".lock").open("w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        print("another build is running, skipped")
+        return
     cache_file = out / "cache.json"
-    cache = {} if args.full or not cache_file.exists() else json.loads(cache_file.read_text())
+    # --full still loads the cache: it's the only copy of sessions Claude Code already deleted
+    cache = json.loads(cache_file.read_text()) if cache_file.exists() else {}
 
     files = [f for d in sorted(args.src.iterdir()) if d.is_dir() and not EXCLUDE_DIRS.match(d.name)
              for f in sorted(d.glob("*.jsonl")) if not f.name.startswith("agent-")]
@@ -192,7 +209,7 @@ def main():
     for i, f in enumerate(files, 1):
         st = f.stat()
         key = f"{st.st_mtime_ns}:{st.st_size}"
-        hit = cache.get(str(f))
+        hit = None if args.full else cache.get(str(f))
         if hit and hit["key"] == key:
             if hit["session"]:
                 sessions.append(hit["session"])
@@ -216,16 +233,19 @@ def main():
         cache[str(f)] = {"key": key, "session": s}
     print(file=sys.stderr)
 
-    # drop cache rows for files that no longer exist (Claude Code cleans old sessions up)
+    # Claude Code deletes transcripts after cleanupPeriodDays; the archive keeps them
     live = {str(f) for f in files}
-    cache = {k: v for k, v in cache.items() if k in live}
-    cache_file.write_text(json.dumps(cache, ensure_ascii=False))
+    for k, v in cache.items():
+        if k not in live and v["session"]:
+            v["session"]["archived"] = True
+            sessions.append(v["session"])
+    write_atomic(cache_file, json.dumps(cache, ensure_ascii=False))
 
     sessions.sort(key=lambda s: s["end"], reverse=True)
     data = {"generated": datetime.now().astimezone().isoformat(), "sessions": sessions}
     payload = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
     tpl = (HERE / "template.html").read_text(encoding="utf-8")
-    (out / "index.html").write_text(tpl.replace("/*__DATA__*/null", payload), encoding="utf-8")
+    write_atomic(out / "index.html", tpl.replace("/*__DATA__*/null", payload))
 
     print(f"{len(sessions)} sessions · {built} rebuilt · {failed} failed → {out / 'index.html'}")
     if args.open:

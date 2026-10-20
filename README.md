@@ -7,12 +7,13 @@ Turn your local Claude Code session logs into a browsable, searchable static sit
 ## 功能
 
 - **總覽**：session 數、prompt 數、活躍時數、compact 次數、輸出 tokens
-- **活動熱圖**：近 26 週每天的 prompt 量，點某一天就篩出當天的 session
+- **近 30 天活動**：每天的 prompt 量，點某一天就篩出當天的 session
 - **專案分類**：依資料夾分組，`.claude/worktrees/*` 自動併回原本的 repo
 - **全文搜尋**：標題、每一則 prompt、compact 摘要、recap 都搜得到，命中處會高亮（快捷鍵 `/`）
 - **篩選與排序**：7/30/90 天、有 compact、有 PR、是否包含 SDK session；可依最近、活躍時間、prompt 數、token 排序
 - **Compact 時間軸**：每次 compact 是手動還是自動、前後 token 數、保留比例、摘要全文，還能一鍵跳回對話裡 compact 的位置
 - **Session 詳細面板**：recap、compact、關聯 PR、prompt 時間軸
+- **永久封存**：Claude Code 預設 30 天後會清掉舊 transcript，CC Archive 會留著，標成「已封存」
 - **完整對話頁**：由 [simonw/claude-code-transcripts](https://github.com/simonw/claude-code-transcripts) 產生
 - 深淺色主題、手機版版面
 
@@ -26,6 +27,24 @@ uv run build.py --full   # 強制全部重建
 ```
 
 產出的網站在 `site/`，直接用瀏覽器打開 `site/index.html` 就能看。
+
+### 自動更新
+
+在 `~/.claude/settings.json` 加一個 SessionEnd hook，每次結束 session 就在背景重建（增量建置約 2 秒，有 file lock 防止重複執行）：
+
+```json
+{
+  "hooks": {
+    "SessionEnd": [{
+      "hooks": [{
+        "type": "command",
+        "command": "cd \"$HOME/path/to/cc-archive\" && nohup uv run build.py > site/build.log 2>&1 &",
+        "timeout": 10
+      }]
+    }]
+  }
+}
+```
 
 ## 隱私
 
