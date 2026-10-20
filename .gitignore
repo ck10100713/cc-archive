@@ -1,0 +1,5 @@
+# generated site = your private transcripts, never commit it
+site/
+archive/
+.playwright-mcp/
+__pycache__/
