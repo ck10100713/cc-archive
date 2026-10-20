@@ -10,7 +10,6 @@
   --text: #1d1c1a; --muted: #6f6b63; --faint: #9c978d;
   --accent: #c8613d; --accent-soft: #f7e4dc; --accent-text: #a44a29;
   --good: #3d7d5a; --good-soft: #e1efe6; --info: #3f62a8; --info-soft: #e3e9f6;
-  --heat-0: #ebe8e1; --heat-1: #f2cdbd; --heat-2: #e59a7b; --heat-3: #d06a45; --heat-4: #9f3f1e;
   --shadow: 0 1px 2px rgba(30,25,15,.05), 0 4px 16px rgba(30,25,15,.06);
   --radius: 12px;
   color-scheme: light;
@@ -21,7 +20,6 @@
     --text: #ecebe7; --muted: #a8a399; --faint: #78736a;
     --accent: #e07a55; --accent-soft: #3a2820; --accent-text: #f0a183;
     --good: #7cc29a; --good-soft: #1f3128; --info: #8aa8e6; --info-soft: #1f2a40;
-    --heat-0: #2a2826; --heat-1: #4d3125; --heat-2: #7d422b; --heat-3: #b85a36; --heat-4: #ee8b62;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
     color-scheme: dark;
   }
@@ -31,7 +29,6 @@
   --text: #ecebe7; --muted: #a8a399; --faint: #78736a;
   --accent: #e07a55; --accent-soft: #3a2820; --accent-text: #f0a183;
   --good: #7cc29a; --good-soft: #1f3128; --info: #8aa8e6; --info-soft: #1f2a40;
-  --heat-0: #2a2826; --heat-1: #4d3125; --heat-2: #7d422b; --heat-3: #b85a36; --heat-4: #ee8b62;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
   color-scheme: dark;
 }
@@ -119,17 +116,30 @@ kbd {
 .insights { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; margin-bottom: 22px; }
 .card-h { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 0; font-weight: 600; font-size: 13px; }
 .card-h span { color: var(--faint); font-weight: 400; font-size: 12px; }
-.heat { padding: 12px 16px 14px; overflow-x: auto; }
-.insights > .card:first-child { display: flex; flex-direction: column; }
-.heat { flex: 1; display: flex; flex-direction: column; }
-.heat-strip { flex: 1; min-height: 90px; display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 4px; }
-.hc { all: unset; cursor: pointer; display: grid; grid-template-rows: 1fr auto; gap: 5px; min-width: 0; }
-.hc i { display: block; min-height: 44px; border-radius: 4px; }
-.hc:hover i { outline: 1.5px solid var(--text); outline-offset: 1px; }
-.hc.sel i { outline: 2px solid var(--accent); outline-offset: 1px; }
-.hc span { font-size: 10.5px; color: var(--faint); white-space: nowrap; height: 14px; }
-.heat-legend { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--faint); margin-top: 10px; }
-.heat-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.heat { flex: 1; display: flex; flex-direction: column; padding: 6px 16px 14px; }
+.heat-sum { display: flex; gap: 22px; padding: 2px 0 14px; }
+.heat-sum b { display: block; font-size: 20px; letter-spacing: -.4px; font-variant-numeric: tabular-nums; }
+.heat-sum span { font-size: 11.5px; color: var(--faint); }
+.chart { flex: 1; min-height: 110px; position: relative; display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); align-items: end; border-bottom: 1px solid var(--line); }
+.chart::before { content: attr(data-max); position: absolute; top: 0; right: 0; font-size: 10.5px; color: var(--faint); transform: translateY(-100%); }
+.chart::after { content: ""; position: absolute; inset: 0 0 auto 0; border-top: 1px dashed var(--line); }
+.hc { all: unset; cursor: pointer; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
+.hc i { display: block; width: 62%; min-height: 2px; border-radius: 3px 3px 0 0; background: var(--accent); opacity: .55; transition: opacity .12s; }
+.hc.zero i { background: var(--line-2); opacity: 1; }
+.hc.today i { opacity: 1; }
+.hc:hover i { opacity: 1; }
+.chart.has-sel .hc:not(.sel) i { opacity: .2; }
+.chart.has-sel .hc.sel i { opacity: 1; }
+.hc em {
+  position: absolute; bottom: calc(var(--h) + 6px); font: 600 11px/1 system-ui; font-style: normal; color: var(--text);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 3px 5px; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 2;
+}
+.hc:hover em, .hc.sel em { opacity: 1; }
+.axis { display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); margin-top: 6px; font-size: 10.5px; color: var(--faint); }
+.axis span { white-space: nowrap; overflow: visible; }
+.axis span.r { text-align: right; direction: rtl; }
+.heat-foot { display: flex; justify-content: flex-end; margin-top: 8px; min-height: 18px; }
 .toplist { padding: 10px 16px 14px; display: grid; gap: 9px; }
 .bar-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: 12.5px; cursor: pointer; }
 .bar-row:hover .bar-name { color: var(--accent-text); }
@@ -433,22 +443,26 @@ function heatmap(list) {
   const days = [];
   for (let i = 29; i >= 0; i--) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i); days.push(d); }
   const vals = days.map(d => counts[dkey(d)] || 0);
-  const nz = vals.filter(Boolean).sort((a, b) => a - b);
-  const q = p => nz[Math.floor((nz.length - 1) * p)] || 1;
-  const th = [q(.25), q(.5), q(.75)];
-  const lvl = n => !n ? 0 : n <= th[0] ? 1 : n <= th[1] ? 2 : n <= th[2] ? 3 : 4;
-  const total = vals.reduce((a, b) => a + b, 0), active = nz.length;
+  const max = Math.max(1, ...vals), total = vals.reduce((a, b) => a + b, 0), active = vals.filter(Boolean).length;
   const wk = ["日", "一", "二", "三", "四", "五", "六"];
-  const cells = days.map((d, i) => {
-    const k = dkey(d), n = vals[i];
-    const label = i === 29 ? "今天" : (d.getDay() === 1 || i === 0) && i < 27 ? fmtDate(d) : "";
-    return `<button class="hc ${st.day === k ? "sel" : ""}" data-day="${k}" title="${k}（${wk[d.getDay()]}）・${n} prompts">
-      <i style="background:var(--heat-${lvl(n)})"></i><span>${label}</span></button>`;
+  const bars = days.map((d, i) => {
+    const k = dkey(d), n = vals[i], h = n ? Math.max(4, n / max * 100) : 0;
+    const cls = [n ? "" : "zero", i === 29 ? "today" : "", st.day === k ? "sel" : ""].join(" ");
+    return `<button class="hc ${cls}" data-day="${k}" style="--h:${h}%" aria-label="${k} ${n} prompts">
+      <em>${fmtDate(d)}（${wk[d.getDay()]}）${n}</em><i style="height:${h}%"></i></button>`;
   }).join("");
-  return `<div class="card"><div class="card-h">近 30 天活動<span>${active} 天有活動・${fmtNum(total)} prompts</span></div>
-    <div class="heat"><div class="heat-strip" id="heat">${cells}</div>
-    <div class="heat-legend">少 ${[0, 1, 2, 3, 4].map(l => `<i style="background:var(--heat-${l})"></i>`).join("")} 多
-    ${st.day ? `<span class="spacer"></span><button class="link-btn" data-clear-day>清除日期 ${esc(st.day)} ✕</button>` : ""}</div></div></div>`;
+  const axis = days.map((d, i) => `<span class="${i === 29 ? "r" : ""}">${i === 29 ? "今天" : d.getDay() === 1 && i < 26 ? fmtDate(d) : ""}</span>`).join("");
+  return `<div class="card"><div class="card-h">近 30 天活動<span>每日 prompts</span></div>
+    <div class="heat">
+      <div class="heat-sum">
+        <div><b>${fmtNum(total)}</b><span>prompts</span></div>
+        <div><b>${active}<small style="font-size:13px;color:var(--faint)"> / 30</small></b><span>活躍天數</span></div>
+        <div><b>${active ? Math.round(total / active) : 0}</b><span>活躍日平均</span></div>
+      </div>
+      <div class="chart ${st.day ? "has-sel" : ""}" id="heat" data-max="${max}">${bars}</div>
+      <div class="axis">${axis}</div>
+      <div class="heat-foot">${st.day ? `<button class="link-btn" data-clear-day>清除日期 ${esc(st.day)} ✕</button>` : ""}</div>
+    </div></div>`;
 }
 function topProjects(list) {
   const m = {};
